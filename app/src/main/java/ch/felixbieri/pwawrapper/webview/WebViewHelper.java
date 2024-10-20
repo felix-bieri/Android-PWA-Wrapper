@@ -1,16 +1,15 @@
-package at.xtools.pwawrapper.webview;
+package ch.felixbieri.pwawrapper.webview;
 
-import android.annotation.TargetApi;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
@@ -19,10 +18,11 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.net.NetworkCapabilities;
 
-import at.xtools.pwawrapper.Constants;
-import at.xtools.pwawrapper.R;
-import at.xtools.pwawrapper.ui.UIManager;
+import ch.felixbieri.pwawrapper.R;
+import ch.felixbieri.pwawrapper.Constants;
+import ch.felixbieri.pwawrapper.ui.UIManager;
 
 public class WebViewHelper {
     // Instance variables
@@ -34,26 +34,27 @@ public class WebViewHelper {
     public WebViewHelper(Activity activity, UIManager uiManager) {
         this.activity = activity;
         this.uiManager = uiManager;
-        this.webView = (WebView) activity.findViewById(R.id.webView);
+        this.webView = activity.findViewById(R.id.webView);
         this.webSettings = webView.getSettings();
     }
 
     /**
-     * Simple helper method checking if connected to Network.
-     * Doesn't check for actual Internet connection!
-     * @return {boolean} True if connected to Network.
+     * Checks if the device has an active network connection with internet capability.
+     * Note: This method does not guarantee a functional internet connection.
+     * It only verifies that the network reports having internet access.
+     *
+     * @return True if the device has an active network connection that claims to have internet capability,
+     *         false otherwise.
      */
     private boolean isNetworkAvailable() {
-        ConnectivityManager manager =
-                (ConnectivityManager) activity.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = manager.getActiveNetworkInfo();
-
-        boolean isAvailable = false;
-        if (networkInfo != null && networkInfo.isConnected()) {
-            // Wifi or Mobile Network is present and connected
-            isAvailable = true;
+        ConnectivityManager manager = (ConnectivityManager) activity.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (manager != null) {
+            NetworkCapabilities capabilities = manager.getNetworkCapabilities(manager.getActiveNetwork());
+            return capabilities != null &&
+                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
         }
-        return isAvailable;
+        return false;
     }
 
     // manipulate cache settings to make sure our PWA gets updated
@@ -73,6 +74,7 @@ public class WebViewHelper {
     }
 
     // handles initial setup of webview
+    @SuppressLint("SetJavaScriptEnabled")
     public void setupWebView() {
         // accept cookies
         CookieManager.getInstance().setAcceptCookie(true);
@@ -82,20 +84,14 @@ public class WebViewHelper {
         webSettings.setSupportMultipleWindows(true);
 
         // PWA settings
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
-            webSettings.setDatabasePath(activity.getApplicationContext().getFilesDir().getAbsolutePath());
-        }
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            webSettings.setAppCacheMaxSize(Long.MAX_VALUE);
-        }
         webSettings.setDomStorageEnabled(true);
-        webSettings.setAppCachePath(activity.getApplicationContext().getCacheDir().getAbsolutePath());
-        webSettings.setAppCacheEnabled(true);
+        webSettings.setDomStorageEnabled(true);
+        webSettings.setDatabaseEnabled(true);
+        webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
         webSettings.setDatabaseEnabled(true);
 
         // enable mixed content mode conditionally
-        if (Constants.ENABLE_MIXED_CONTENT
-                && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        if (Constants.ENABLE_MIXED_CONTENT) {
             webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
         }
 
@@ -147,23 +143,14 @@ public class WebViewHelper {
             }
 
             // handle loading error by showing the offline screen
-            @Deprecated
-            @Override
-            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-                    handleLoadError(errorCode);
-                }
-            }
-
-            @TargetApi(Build.VERSION_CODES.M)
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    // new API method calls this on every error for each resource.
-                    // we only want to interfere if the page itself got problems.
-                    String url = request.getUrl().toString();
-                    if (view.getUrl().equals(url)) {
-                        handleLoadError(error.getErrorCode());
+                if (request.isForMainFrame()) {
+                    int errorCode = error.getErrorCode();
+                    if (errorCode == WebViewClient.ERROR_CONNECT) {
+                        // Show "No internet connection" message
+                    } else {
+                        handleLoadError(errorCode);
                     }
                 }
             }
@@ -186,49 +173,59 @@ public class WebViewHelper {
             .setMessage(R.string.noapp_description)
             .show();
     }
+
     // handle load errors
     private void handleLoadError(int errorCode) {
         if (errorCode != WebViewClient.ERROR_UNSUPPORTED_SCHEME) {
             uiManager.setOffline(true);
         } else {
             // Unsupported Scheme, recover
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    goBack();
-                }
-            }, 100);
+            new Handler(Looper.getMainLooper()).postDelayed(() -> loadIntentUrl(Constants.WEBAPP_URL), 100);
         }
     }
 
     // handle external urls
-    private boolean handleUrlLoad(WebView view, String url) {
+    @SuppressLint("QueryPermissionsNeeded")
+    private void handleUrlLoad(WebView view, String url) {
         // prevent loading content that isn't ours
-        if (!url.startsWith(Constants.WEBAPP_URL)) {
-            // stop loading
-            // stopping only would cause the PWA to freeze, need to reload the app as a workaround
-            view.stopLoading();
-            view.reload();
 
-            // open external URL in Browser/3rd party apps instead
-            try {
-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                if (intent.resolveActivity(activity.getPackageManager()) != null) {
-                    activity.startActivity(intent);
-                } else {
-                    showNoAppDialog(activity);
-                }
-            } catch (Exception e) {
-                showNoAppDialog(activity);
-            }
-            // return value for shouldOverrideUrlLoading
-            return true;
-        } else {
+        if (url.startsWith(Constants.WEBAPP_URL) || url.startsWith(Constants.WEB_URL)) {
             // let WebView load the page!
             // activate loading animation screen
             uiManager.setLoading(true);
-            // return value for shouldOverrideUrlLoading
-            return false;
+            return; // Allow WebView to load
+        }
+
+        // Handle external URL
+        //view.stopLoading();
+        //view.reload();
+
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            String intentUrl = Uri.parse(url).toString();
+
+            if (intent.resolveActivity(activity.getPackageManager()) != null) {
+                // Use this if the app is clear
+                activity.startActivity(intent);
+                view.goBack();
+
+            } else if (intentUrl.contains("maps.google.com") || intentUrl.contains("maps")) {
+                // Use this for maps because the consent page throws ACTION_VIEW exception
+                url = intentUrl.replace("https://consent.google.com/m?continue=", "");
+                intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                activity.startActivity(intent);
+                view.goBack();
+
+            } else if (intentUrl.contains("https")) {
+                activity.startActivity(intent);
+                view.goBack();
+            } else {
+                showNoAppDialog(activity);
+                webView.loadUrl(Constants.WEBAPP_URL);
+            }
+        } catch (Exception e) {
+            showNoAppDialog(activity);
+            webView.loadUrl(Constants.WEBAPP_URL);
         }
     }
 
@@ -248,7 +245,7 @@ public class WebViewHelper {
 
     // load URL from intent
     public void loadIntentUrl(String url) {
-        if (!url.equals("") && url.contains(Constants.WEBAPP_HOST)) {
+        if (url.contains(Constants.WEBAPP_HOST)) {
             webView.loadUrl(url);
         } else {
             // Fallback

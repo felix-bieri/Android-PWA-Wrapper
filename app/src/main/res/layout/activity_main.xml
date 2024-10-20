@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
-    tools:context="at.xtools.pwawrapper.MainActivity">
+    tools:context="ch.felixbieri.pwawrapper.MainActivity">
 
 
     <LinearLayout
@@ -23,8 +23,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:tint="@color/colorPrimary"
-            app:srcCompat="@drawable/ic_cloud_off_black_48dp" />
+            android:contentDescription="@string/offline_heading"
+            app:srcCompat="@drawable/ic_cloud_off_black_48dp"
+            app:tint="@color/colorPrimary"  />
 
         <TextView
             android:id="@+id/offlineHeading"
@@ -68,6 +69,6 @@
         android:layout_alignParentStart="true"
         android:max="100"
         android:progress="0"
-        android:progressTint="@color/green" />
+        android:progressTint="@color/progressbar" />
 
 </RelativeLayout>

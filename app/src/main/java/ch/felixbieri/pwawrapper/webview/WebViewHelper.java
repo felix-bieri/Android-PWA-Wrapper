@@ -26,10 +26,10 @@ import ch.felixbieri.pwawrapper.ui.UIManager;
 
 public class WebViewHelper {
     // Instance variables
-    private final Activity activity;
-    private final UIManager uiManager;
-    private final WebView webView;
-    private final WebSettings webSettings;
+    private Activity activity;
+    private UIManager uiManager;
+    private WebView webView;
+    private WebSettings webSettings;
 
     public WebViewHelper(Activity activity, UIManager uiManager) {
         this.activity = activity;

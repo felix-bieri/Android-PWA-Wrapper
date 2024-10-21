@@ -19,7 +19,7 @@ package ch.felixbieri.pwawrapper;
 
         // Constants
         // window transition duration in ms
-        public static final int SLIDE_EFFECT = 3000; //old value 2200
+        public static final int SLIDE_EFFECT = 1000; //old value 2200
         // show your app when the page is loaded XX %.
         // lower it, if you've got server-side rendering (e.g. to 35),
         // bump it up to ~98 if you don't have SSR or a loading screen in your web app

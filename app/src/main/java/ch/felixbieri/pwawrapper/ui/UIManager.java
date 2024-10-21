@@ -34,7 +34,7 @@ public class UIManager {
 
         // set click listener for offline-screen
         offlineContainer.setOnClickListener(v -> {
-            webView.loadUrl(Constants.WEBAPP_URL);
+            webView.loadUrl(Constants.getWebAppUrl());
             setOffline(false);
         });
     }

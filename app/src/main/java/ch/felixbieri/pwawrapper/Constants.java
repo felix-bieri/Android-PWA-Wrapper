@@ -3,9 +3,13 @@ package ch.felixbieri.pwawrapper;
     public class Constants {
         public Constants(){}
         // Root page
-        public static final String WEBAPP_URL = "https://app.islikon2026.ch/apphome/";
-        public static final String WEB_URL = "https://app.islikon2026.ch/";
-        public static final String WEBAPP_HOST = "app.islikon2026.ch"; // used for checking Intent-URLs
+        public static String getWebAppUrl() {
+            return BuildConfig.DEBUG ? "https://app.islikon2026.ch/apphome" : "https://app.islikon2026.ch/";
+        }
+
+        public static String getWebAppHost() {
+            return BuildConfig.DEBUG ? "app.islikon2026.ch" : "islikon2026.ch";
+        } // used for checking Intent-URLs
 
         // User Agent tweaks
         public static final boolean POSTFIX_USER_AGENT = true; // set to true to append USER_AGENT_POSTFIX to user agent

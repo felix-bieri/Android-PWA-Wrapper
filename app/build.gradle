@@ -8,12 +8,23 @@ android {
         minSdkVersion 31
         targetSdkVersion 35
         versionCode 1
-        versionName "1.1"
+        versionName "1.2"
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
+    buildFeatures {
+        buildConfig true
+    }
     buildTypes {
+        debug {
+            buildConfigField "boolean", "DEBUG", "true"
+            applicationIdSuffix ".debug"
+            debuggable true
+            // other debug configurations
+        }
         release {
-            minifyEnabled false
+            buildConfigField "boolean", "DEBUG", "false"
+            minifyEnabled true
+            debuggable false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
 
@@ -23,8 +34,8 @@ android {
         }
     }
     namespace 'ch.felixbieri.pwawrapper'
-    buildFeatures {
-        viewBinding true
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
     }
 }
 

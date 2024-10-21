@@ -1,6 +1,11 @@
 package ch.felixbieri.pwawrapper.ui;
 
 import android.app.Activity;
+import android.app.ActivityManager;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.util.TypedValue;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
@@ -29,7 +34,7 @@ public class UIManager {
 
         // set click listener for offline-screen
         offlineContainer.setOnClickListener(v -> {
-            webView.loadUrl(Constants.WEBAPP_URL);
+            webView.loadUrl(Constants.getWebAppUrl());
             setOffline(false);
         });
     }
@@ -75,5 +80,39 @@ public class UIManager {
             webView.setVisibility(View.VISIBLE);
             offlineContainer.setVisibility(View.INVISIBLE);
         }
+    }
+
+    // set icon in recent activity view to a white one to be visible in the app bar
+    public void changeRecentAppsIcon() {
+        if (activity == null) {
+            return;
+        }
+
+        TypedValue typedValue = new TypedValue();
+        Resources.Theme theme = activity.getTheme();
+        theme.resolveAttribute(R.color.colorPrimary, typedValue, true);
+        int color = typedValue.data;
+
+        // Using the Builder with setLabel() and setIcon() with resource ID:
+        ActivityManager.TaskDescription description;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            description = new ActivityManager.TaskDescription.Builder()
+                    .setLabel(activity.getString(R.string.app_name))
+                    .setIcon(R.drawable.ic_appbar) // Corrected to use resource ID
+                    .setBackgroundColor(color)
+                    .build();
+        } else {
+            Bitmap iconWhite = BitmapFactory.decodeResource(activity.getResources(), R.drawable.ic_appbar);
+
+            description = new ActivityManager.TaskDescription(
+                    activity.getResources().getString(R.string.app_name),
+                    iconWhite,
+                    color
+            );
+            activity.setTaskDescription(description);
+            iconWhite.recycle();
+        }
+
+        activity.setTaskDescription(description);
     }
 }

@@ -16,6 +16,7 @@ import ch.felixbieri.pwawrapper.ui.UIManager;
 import ch.felixbieri.pwawrapper.webview.WebViewHelper;
 
 public class MainActivity extends AppCompatActivity {
+    private UIManager uiManager;
     private WebViewHelper webViewHelper;
     private boolean intentHandled = false;
 
@@ -29,38 +30,35 @@ public class MainActivity extends AppCompatActivity {
 
         // Setup Helpers
         // Globals
-        UIManager uiManager = new UIManager(this);
+        uiManager = new UIManager(this);
         webViewHelper = new WebViewHelper(this, uiManager);
 
         // Setup App
         webViewHelper.setupWebView();
+        uiManager.changeRecentAppsIcon();
 
         // Check for Intents
         try {
-            String intentAction = getIntent().getAction();
-            if (!intentHandled && intentAction != null && intentAction.equals(Intent.ACTION_VIEW)) {
-                Uri intentUri = getIntent().getData();
-                if (intentUri != null) {
-                    if ("geo".equals(intentUri.getScheme())) {
-                        Intent mapsIntent = new Intent(Intent.ACTION_VIEW, intentUri);
-                        if (mapsIntent.resolveActivity(getPackageManager()) != null) {
-                            startActivity(mapsIntent);
-                            intentHandled = true;
-                        }
-                    } else if ("mailto".equals(intentUri.getScheme())) {
-                        Intent emailIntent = new Intent(Intent.ACTION_SENDTO, intentUri);
-                        if (emailIntent.resolveActivity(getPackageManager()) != null) {
-                            startActivity(emailIntent);
-                            intentHandled = true;
-                        }
-                    } else {
-                        webViewHelper.loadHome();
-                    }
+            Intent i = getIntent();
+            String intentAction = i.getAction();
+            // Handle URLs opened in Browser
+            if (!intentHandled && intentAction != null && intentAction.equals(Intent.ACTION_VIEW)){
+                Uri intentUri = i.getData();
+                String intentText = "";
+                if (intentUri != null){
+                    intentText = intentUri.toString();
+                }
+                // Load up the URL specified in the Intent
+                if (!intentText.isEmpty()) {
+                    intentHandled = true;
+                    webViewHelper.loadIntentUrl(intentText);
                 }
             } else {
+                // Load up the Web App
                 webViewHelper.loadHome();
             }
         } catch (Exception e) {
+            // Load up the Web App
             webViewHelper.loadHome();
         }
 

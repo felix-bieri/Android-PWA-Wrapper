@@ -154,6 +154,20 @@ public class WebViewHelper {
                     }
                 }
             }
+
+            //Handle if request comes from same hostname. If not, it may be an intent
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+
+                if ((String.valueOf(request.getUrl())).contains(Constants.getWebAppHost())) {
+                    view.loadUrl(String.valueOf(request.getUrl()));
+                } else {
+                    Intent intent = new Intent(Intent.ACTION_VIEW, request.getUrl());
+                    view.getContext().startActivity(intent);
+                }
+
+                return true;
+            }
         });
     }
 
@@ -180,52 +194,37 @@ public class WebViewHelper {
             uiManager.setOffline(true);
         } else {
             // Unsupported Scheme, recover
-            new Handler(Looper.getMainLooper()).postDelayed(() -> loadIntentUrl(Constants.WEBAPP_URL), 100);
+            new Handler(Looper.getMainLooper()).postDelayed(this::goBack, 100);
         }
     }
 
     // handle external urls
     @SuppressLint("QueryPermissionsNeeded")
-    private void handleUrlLoad(WebView view, String url) {
+    private boolean handleUrlLoad(WebView view, String url) {
         // prevent loading content that isn't ours
+        if (!url.startsWith(Constants.getWebAppUrl()) && !url.contains("islikon2026.ch")) {
 
-        if (url.startsWith(Constants.WEBAPP_URL) || url.startsWith(Constants.WEB_URL)) {
+            // open external URL in Browser/3rd party apps instead
+            try {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                if (intent.resolveActivity(activity.getPackageManager()) != null) {
+                    activity.startActivity(intent);
+                } else {
+                    showNoAppDialog(activity);
+                }
+            } catch (Exception e) {
+                showNoAppDialog(activity);
+            }
+
+            view.loadUrl(Constants.getWebAppUrl());
+            // return value for shouldOverrideUrlLoading
+            return true;
+        } else {
             // let WebView load the page!
             // activate loading animation screen
             uiManager.setLoading(true);
-            return; // Allow WebView to load
-        }
-
-        // Handle external URL
-        //view.stopLoading();
-        //view.reload();
-
-        try {
-            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-            String intentUrl = Uri.parse(url).toString();
-
-            if (intent.resolveActivity(activity.getPackageManager()) != null) {
-                // Use this if the app is clear
-                activity.startActivity(intent);
-                view.goBack();
-
-            } else if (intentUrl.contains("maps.google.com") || intentUrl.contains("maps")) {
-                // Use this for maps because the consent page throws ACTION_VIEW exception
-                url = intentUrl.replace("https://consent.google.com/m?continue=", "");
-                intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                activity.startActivity(intent);
-                view.goBack();
-
-            } else if (intentUrl.contains("https")) {
-                activity.startActivity(intent);
-                view.goBack();
-            } else {
-                showNoAppDialog(activity);
-                webView.loadUrl(Constants.WEBAPP_URL);
-            }
-        } catch (Exception e) {
-            showNoAppDialog(activity);
-            webView.loadUrl(Constants.WEBAPP_URL);
+            // return value for shouldOverrideUrlLoading
+            return false;
         }
     }
 
@@ -240,12 +239,12 @@ public class WebViewHelper {
 
     // load app startpage
     public void loadHome() {
-        webView.loadUrl(Constants.WEBAPP_URL);
+        webView.loadUrl(Constants.getWebAppUrl());
     }
 
     // load URL from intent
     public void loadIntentUrl(String url) {
-        if (url.contains(Constants.WEBAPP_HOST)) {
+        if (!url.isEmpty() && url.contains(Constants.getWebAppHost())) {
             webView.loadUrl(url);
         } else {
             // Fallback

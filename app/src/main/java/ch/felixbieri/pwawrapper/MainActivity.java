@@ -16,6 +16,7 @@ import ch.felixbieri.pwawrapper.ui.UIManager;
 import ch.felixbieri.pwawrapper.webview.WebViewHelper;
 
 public class MainActivity extends AppCompatActivity {
+    private UIManager uiManager;
     private WebViewHelper webViewHelper;
     private boolean intentHandled = false;
 
@@ -34,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Setup App
         webViewHelper.setupWebView();
+        uiManager.changeRecentAppsIcon();
 
         // Check for Intents
         try {

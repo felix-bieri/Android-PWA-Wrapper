@@ -30,7 +30,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Setup Helpers
         // Globals
-        UIManager uiManager = new UIManager(this);
+        uiManager = new UIManager(this);
         webViewHelper = new WebViewHelper(this, uiManager);
 
         // Setup App

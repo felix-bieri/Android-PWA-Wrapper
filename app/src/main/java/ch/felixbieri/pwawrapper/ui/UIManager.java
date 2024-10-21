@@ -1,12 +1,10 @@
 package ch.felixbieri.pwawrapper.ui;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.os.Build;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
@@ -14,9 +12,6 @@ import android.view.animation.DecelerateInterpolator;
 import android.webkit.WebView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-
-import java.io.IOException;
-import java.io.InputStream;
 
 import ch.felixbieri.pwawrapper.Constants;
 import ch.felixbieri.pwawrapper.R;
@@ -99,8 +94,7 @@ public class UIManager {
         int color = typedValue.data;
 
         // Using the Builder with setLabel() and setIcon() with resource ID:
-        ActivityManager.TaskDescription description =
-                null;
+        ActivityManager.TaskDescription description;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             description = new ActivityManager.TaskDescription.Builder()
                     .setLabel(activity.getString(R.string.app_name))

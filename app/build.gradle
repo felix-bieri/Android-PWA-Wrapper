@@ -4,11 +4,11 @@ apply plugin: 'com.google.android.libraries.mapsplatform.secrets-gradle-plugin'
 android {
     compileSdk 35
     defaultConfig {
-        applicationId "ch.felixbieri.pwawrapper"
+        applicationId "ch.islikon2026.pwawrapper"
         minSdkVersion 31
         targetSdkVersion 35
         versionCode 1
-        versionName "1.2"
+        versionName "1.3"
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
     buildFeatures {

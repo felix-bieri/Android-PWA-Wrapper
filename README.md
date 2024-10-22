@@ -17,7 +17,7 @@ An Android Wrapper application to create native Android Apps from an offline-cap
 - ✅ Check `Constants.java` for more options
 - ✅ Build App in Android Studio
 - 🆕 Updated gradle and AndroidX
-- 🔜 Integrating push notification via Firebase Cloud Messaging
+- 🚧 Integrating push notification via Firebase Cloud Messaging
 
 ## License
 [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.en.html) - if you use it, we wanna see it!
